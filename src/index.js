@@ -3,11 +3,11 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { getConfig, setConfig, isConfigured } from './config.js';
 import {
-  listInvoices,
-  getInvoice,
-  createInvoice,
-  deleteInvoice,
-  sendInvoice,
+  listDocuments,
+  getDocument,
+  createDocument,
+  downloadDocument,
+  sendDocument,
   listPartners,
   getPartner,
   createPartner,
@@ -21,8 +21,10 @@ import {
   listBankAccounts,
   getBankAccount,
   createBankAccount,
-  getOrganization,
-  listCurrencies
+  updateBankAccount,
+  deleteBankAccount,
+  listDocumentBlocks,
+  getDocumentBlock
 } from './api.js';
 
 const program = new Command();
@@ -101,7 +103,7 @@ function requireAuth() {
 
 program
   .name('billingohu')
-  .description(chalk.bold('Billingo CLI') + ' - Hungarian invoicing and accounting from your terminal')
+  .description(chalk.bold('Billingo CLI') + ' - Hungarian invoicing from your terminal')
   .version('1.0.0');
 
 // ============================================================
@@ -112,14 +114,14 @@ const configCmd = program.command('config').description('Manage CLI configuratio
 
 configCmd
   .command('set')
-  .description('Set configuration values')
-  .option('--api-key <key>', 'Billingo API Key')
+  .description('Set API key')
+  .option('--api-key <key>', 'Billingo API key')
   .action((options) => {
     if (options.apiKey) {
       setConfig('apiKey', options.apiKey);
-      printSuccess(`API Key set`);
+      printSuccess(`API key set`);
     } else {
-      printError('No API key provided. Use --api-key');
+      printError('No API key provided. Use --api-key <key>');
     }
   });
 
@@ -128,51 +130,50 @@ configCmd
   .description('Show current configuration')
   .action(() => {
     const apiKey = getConfig('apiKey');
-
     console.log(chalk.bold('\nBillingo CLI Configuration\n'));
-    console.log('API Key: ', apiKey ? chalk.green('*'.repeat(8)) : chalk.red('not set'));
+    console.log('API Key: ', apiKey ? chalk.green('*'.repeat(16)) : chalk.red('not set'));
     console.log('');
   });
 
 // ============================================================
-// INVOICES
+// DOCUMENTS (Invoices)
 // ============================================================
 
-const invoicesCmd = program.command('invoices').description('Manage invoices');
+const documentsCmd = program.command('documents').description('Manage documents (invoices)');
 
-invoicesCmd
+documentsCmd
   .command('list')
-  .description('List invoices')
+  .description('List documents')
+  .option('--type <type>', 'Filter by type (invoice, receipt, proforma, etc.)')
+  .option('--status <status>', 'Filter by status')
   .option('--page <n>', 'Page number', '1')
-  .option('--per-page <n>', 'Items per page', '25')
-  .option('--type <type>', 'Filter by type (invoice, draft, proforma, etc.)')
-  .option('--payment-method <method>', 'Filter by payment method')
+  .option('--per-page <n>', 'Results per page', '25')
   .option('--json', 'Output as JSON')
   .action(async (options) => {
     requireAuth();
     try {
-      const invoices = await withSpinner('Fetching invoices...', () =>
-        listInvoices({
-          page: parseInt(options.page),
-          per_page: parseInt(options.perPage),
+      const documents = await withSpinner('Fetching documents...', () =>
+        listDocuments({ 
+          page: parseInt(options.page), 
+          perPage: parseInt(options.perPage),
           type: options.type,
-          payment_method: options.paymentMethod
+          status: options.status
         })
       );
 
       if (options.json) {
-        printJson(invoices);
+        printJson(documents);
         return;
       }
 
-      printTable(invoices, [
+      printTable(documents, [
         { key: 'id', label: 'ID' },
         { key: 'invoice_number', label: 'Number' },
-        { key: 'partner_name', label: 'Partner' },
         { key: 'type', label: 'Type' },
-        { key: 'total_gross', label: 'Total', format: (v) => v?.toFixed(2) || '0.00' },
+        { key: 'partner', label: 'Partner', format: (v) => v?.name || 'N/A' },
+        { key: 'gross_total', label: 'Total' },
         { key: 'currency', label: 'Currency' },
-        { key: 'payment_status', label: 'Payment Status' }
+        { key: 'fulfillment_date', label: 'Date' }
       ]);
     } catch (error) {
       printError(error.message);
@@ -180,89 +181,99 @@ invoicesCmd
     }
   });
 
-invoicesCmd
-  .command('get <invoice-id>')
-  .description('Get invoice details')
+documentsCmd
+  .command('get <id>')
+  .description('Get a specific document')
   .option('--json', 'Output as JSON')
-  .action(async (invoiceId, options) => {
+  .action(async (id, options) => {
     requireAuth();
     try {
-      const invoice = await withSpinner('Fetching invoice...', () => getInvoice(invoiceId));
+      const document = await withSpinner('Fetching document...', () => getDocument(id));
+
+      if (!document) {
+        printError('Document not found');
+        process.exit(1);
+      }
 
       if (options.json) {
-        printJson(invoice);
+        printJson(document);
         return;
       }
 
-      console.log(chalk.bold('\nInvoice Details\n'));
-      console.log('ID:             ', chalk.cyan(invoice.id || invoiceId));
-      console.log('Invoice Number: ', invoice.invoice_number || 'N/A');
-      console.log('Type:           ', invoice.type || 'N/A');
-      console.log('Partner:        ', invoice.partner?.name || 'N/A');
-      console.log('Total Gross:    ', chalk.bold((invoice.total_gross || 0).toFixed(2)), invoice.currency || '');
-      console.log('Payment Status: ', invoice.payment_status || 'N/A');
-      console.log('Due Date:       ', invoice.due_date || 'N/A');
+      console.log(chalk.bold('\nDocument Details\n'));
+      console.log('ID:            ', chalk.cyan(document.id));
+      console.log('Number:        ', document.invoice_number || 'N/A');
+      console.log('Type:          ', document.type);
+      console.log('Partner:       ', document.partner?.name || 'N/A');
+      console.log('Currency:      ', document.currency);
+      console.log('Net Total:     ', document.net_total);
+      console.log('Gross Total:   ', chalk.bold(document.gross_total));
+      console.log('Date:          ', document.fulfillment_date);
     } catch (error) {
       printError(error.message);
       process.exit(1);
     }
   });
 
-invoicesCmd
+documentsCmd
   .command('create')
-  .description('Create invoice')
-  .requiredOption('--data <json>', 'Invoice data as JSON')
+  .description('Create a new document')
+  .requiredOption('--data <json>', 'Document data as JSON')
   .option('--json', 'Output as JSON')
   .action(async (options) => {
     requireAuth();
-    let invoiceData;
+    let documentData;
     try {
-      invoiceData = JSON.parse(options.data);
+      documentData = JSON.parse(options.data);
     } catch {
       printError('Invalid JSON for --data');
       process.exit(1);
     }
 
     try {
-      const invoice = await withSpinner('Creating invoice...', () => createInvoice(invoiceData));
+      const document = await withSpinner('Creating document...', () =>
+        createDocument(documentData)
+      );
 
       if (options.json) {
-        printJson(invoice);
+        printJson(document);
         return;
       }
 
-      printSuccess(`Invoice created: ${chalk.bold(invoice.id || 'N/A')}`);
-      console.log('Invoice Number: ', invoice.invoice_number || 'N/A');
+      printSuccess(`Document created: ${chalk.bold(document.id)}`);
+      console.log('Number:  ', document.invoice_number || 'N/A');
+      console.log('Total:   ', document.gross_total, document.currency);
     } catch (error) {
       printError(error.message);
       process.exit(1);
     }
   });
 
-invoicesCmd
-  .command('delete <invoice-id>')
-  .description('Delete invoice')
-  .action(async (invoiceId) => {
+documentsCmd
+  .command('download <id>')
+  .description('Download document PDF')
+  .action(async (id) => {
     requireAuth();
     try {
-      await withSpinner('Deleting invoice...', () => deleteInvoice(invoiceId));
-      printSuccess('Invoice deleted');
+      const data = await withSpinner('Downloading document...', () => downloadDocument(id));
+      printSuccess('Document downloaded (data returned)');
+      printJson(data);
     } catch (error) {
       printError(error.message);
       process.exit(1);
     }
   });
 
-invoicesCmd
-  .command('send <invoice-id>')
-  .description('Send invoice via email')
+documentsCmd
+  .command('send <id>')
+  .description('Send document via email')
   .requiredOption('--emails <emails>', 'Comma-separated email addresses')
-  .action(async (invoiceId, options) => {
+  .action(async (id, options) => {
     requireAuth();
     const emails = options.emails.split(',').map(e => e.trim());
     try {
-      await withSpinner('Sending invoice...', () => sendInvoice(invoiceId, { emails }));
-      printSuccess(`Invoice sent to ${emails.join(', ')}`);
+      await withSpinner('Sending document...', () => sendDocument(id, emails));
+      printSuccess(`Document sent to: ${emails.join(', ')}`);
     } catch (error) {
       printError(error.message);
       process.exit(1);
@@ -270,24 +281,26 @@ invoicesCmd
   });
 
 // ============================================================
-// PARTNERS
+// PARTNERS (Clients)
 // ============================================================
 
-const partnersCmd = program.command('partners').description('Manage partners (customers)');
+const partnersCmd = program.command('partners').description('Manage partners (clients)');
 
 partnersCmd
   .command('list')
   .description('List partners')
+  .option('--query <q>', 'Search query')
   .option('--page <n>', 'Page number', '1')
-  .option('--per-page <n>', 'Items per page', '25')
+  .option('--per-page <n>', 'Results per page', '25')
   .option('--json', 'Output as JSON')
   .action(async (options) => {
     requireAuth();
     try {
       const partners = await withSpinner('Fetching partners...', () =>
-        listPartners({
-          page: parseInt(options.page),
-          per_page: parseInt(options.perPage)
+        listPartners({ 
+          page: parseInt(options.page), 
+          perPage: parseInt(options.perPage),
+          query: options.query
         })
       );
 
@@ -301,7 +314,7 @@ partnersCmd
         { key: 'name', label: 'Name' },
         { key: 'email', label: 'Email' },
         { key: 'taxcode', label: 'Tax Code' },
-        { key: 'city', label: 'City' }
+        { key: 'iban', label: 'IBAN' }
       ]);
     } catch (error) {
       printError(error.message);
@@ -310,13 +323,18 @@ partnersCmd
   });
 
 partnersCmd
-  .command('get <partner-id>')
-  .description('Get partner details')
+  .command('get <id>')
+  .description('Get a specific partner')
   .option('--json', 'Output as JSON')
-  .action(async (partnerId, options) => {
+  .action(async (id, options) => {
     requireAuth();
     try {
-      const partner = await withSpinner('Fetching partner...', () => getPartner(partnerId));
+      const partner = await withSpinner('Fetching partner...', () => getPartner(id));
+
+      if (!partner) {
+        printError('Partner not found');
+        process.exit(1);
+      }
 
       if (options.json) {
         printJson(partner);
@@ -324,12 +342,12 @@ partnersCmd
       }
 
       console.log(chalk.bold('\nPartner Details\n'));
-      console.log('ID:       ', chalk.cyan(partner.id || partnerId));
-      console.log('Name:     ', chalk.bold(partner.name || 'N/A'));
+      console.log('ID:       ', chalk.cyan(partner.id));
+      console.log('Name:     ', chalk.bold(partner.name));
       console.log('Email:    ', partner.email || 'N/A');
       console.log('Tax Code: ', partner.taxcode || 'N/A');
-      console.log('Address:  ', partner.address || 'N/A');
-      console.log('City:     ', partner.city || 'N/A');
+      console.log('IBAN:     ', partner.iban || 'N/A');
+      console.log('Address:  ', partner.address?.address || 'N/A');
     } catch (error) {
       printError(error.message);
       process.exit(1);
@@ -338,7 +356,7 @@ partnersCmd
 
 partnersCmd
   .command('create')
-  .description('Create partner')
+  .description('Create a new partner')
   .requiredOption('--data <json>', 'Partner data as JSON')
   .option('--json', 'Output as JSON')
   .action(async (options) => {
@@ -352,14 +370,17 @@ partnersCmd
     }
 
     try {
-      const partner = await withSpinner('Creating partner...', () => createPartner(partnerData));
+      const partner = await withSpinner('Creating partner...', () =>
+        createPartner(partnerData)
+      );
 
       if (options.json) {
         printJson(partner);
         return;
       }
 
-      printSuccess(`Partner created: ${chalk.bold(partner.name || partner.id || 'N/A')}`);
+      printSuccess(`Partner created: ${chalk.bold(partner.name)}`);
+      console.log('ID: ', partner.id);
     } catch (error) {
       printError(error.message);
       process.exit(1);
@@ -367,11 +388,11 @@ partnersCmd
   });
 
 partnersCmd
-  .command('update <partner-id>')
-  .description('Update partner')
+  .command('update <id>')
+  .description('Update a partner')
   .requiredOption('--data <json>', 'Partner data as JSON')
   .option('--json', 'Output as JSON')
-  .action(async (partnerId, options) => {
+  .action(async (id, options) => {
     requireAuth();
     let partnerData;
     try {
@@ -382,14 +403,16 @@ partnersCmd
     }
 
     try {
-      const partner = await withSpinner('Updating partner...', () => updatePartner(partnerId, partnerData));
+      const partner = await withSpinner('Updating partner...', () =>
+        updatePartner(id, partnerData)
+      );
 
       if (options.json) {
         printJson(partner);
         return;
       }
 
-      printSuccess('Partner updated');
+      printSuccess(`Partner updated: ${chalk.bold(partner.name)}`);
     } catch (error) {
       printError(error.message);
       process.exit(1);
@@ -397,12 +420,12 @@ partnersCmd
   });
 
 partnersCmd
-  .command('delete <partner-id>')
-  .description('Delete partner')
-  .action(async (partnerId) => {
+  .command('delete <id>')
+  .description('Delete a partner')
+  .action(async (id) => {
     requireAuth();
     try {
-      await withSpinner('Deleting partner...', () => deletePartner(partnerId));
+      await withSpinner('Deleting partner...', () => deletePartner(id));
       printSuccess('Partner deleted');
     } catch (error) {
       printError(error.message);
@@ -420,16 +443,13 @@ productsCmd
   .command('list')
   .description('List products')
   .option('--page <n>', 'Page number', '1')
-  .option('--per-page <n>', 'Items per page', '25')
+  .option('--per-page <n>', 'Results per page', '25')
   .option('--json', 'Output as JSON')
   .action(async (options) => {
     requireAuth();
     try {
       const products = await withSpinner('Fetching products...', () =>
-        listProducts({
-          page: parseInt(options.page),
-          per_page: parseInt(options.perPage)
-        })
+        listProducts({ page: parseInt(options.page), perPage: parseInt(options.perPage) })
       );
 
       if (options.json) {
@@ -440,9 +460,10 @@ productsCmd
       printTable(products, [
         { key: 'id', label: 'ID' },
         { key: 'name', label: 'Name' },
-        { key: 'net_unit_price', label: 'Net Price', format: (v) => v?.toFixed(2) || '0.00' },
-        { key: 'gross_unit_price', label: 'Gross Price', format: (v) => v?.toFixed(2) || '0.00' },
-        { key: 'currency', label: 'Currency' }
+        { key: 'net_unit_price', label: 'Net Price' },
+        { key: 'gross_unit_price', label: 'Gross Price' },
+        { key: 'currency', label: 'Currency' },
+        { key: 'vat', label: 'VAT' }
       ]);
     } catch (error) {
       printError(error.message);
@@ -451,13 +472,18 @@ productsCmd
   });
 
 productsCmd
-  .command('get <product-id>')
-  .description('Get product details')
+  .command('get <id>')
+  .description('Get a specific product')
   .option('--json', 'Output as JSON')
-  .action(async (productId, options) => {
+  .action(async (id, options) => {
     requireAuth();
     try {
-      const product = await withSpinner('Fetching product...', () => getProduct(productId));
+      const product = await withSpinner('Fetching product...', () => getProduct(id));
+
+      if (!product) {
+        printError('Product not found');
+        process.exit(1);
+      }
 
       if (options.json) {
         printJson(product);
@@ -465,10 +491,12 @@ productsCmd
       }
 
       console.log(chalk.bold('\nProduct Details\n'));
-      console.log('ID:          ', chalk.cyan(product.id || productId));
-      console.log('Name:        ', chalk.bold(product.name || 'N/A'));
-      console.log('Net Price:   ', (product.net_unit_price || 0).toFixed(2), product.currency || '');
-      console.log('Gross Price: ', (product.gross_unit_price || 0).toFixed(2), product.currency || '');
+      console.log('ID:          ', chalk.cyan(product.id));
+      console.log('Name:        ', chalk.bold(product.name));
+      console.log('Net Price:   ', product.net_unit_price);
+      console.log('Gross Price: ', product.gross_unit_price);
+      console.log('Currency:    ', product.currency);
+      console.log('VAT:         ', product.vat);
     } catch (error) {
       printError(error.message);
       process.exit(1);
@@ -477,7 +505,7 @@ productsCmd
 
 productsCmd
   .command('create')
-  .description('Create product')
+  .description('Create a new product')
   .requiredOption('--data <json>', 'Product data as JSON')
   .option('--json', 'Output as JSON')
   .action(async (options) => {
@@ -491,14 +519,17 @@ productsCmd
     }
 
     try {
-      const product = await withSpinner('Creating product...', () => createProduct(productData));
+      const product = await withSpinner('Creating product...', () =>
+        createProduct(productData)
+      );
 
       if (options.json) {
         printJson(product);
         return;
       }
 
-      printSuccess(`Product created: ${chalk.bold(product.name || product.id || 'N/A')}`);
+      printSuccess(`Product created: ${chalk.bold(product.name)}`);
+      console.log('ID: ', product.id);
     } catch (error) {
       printError(error.message);
       process.exit(1);
@@ -506,11 +537,11 @@ productsCmd
   });
 
 productsCmd
-  .command('update <product-id>')
-  .description('Update product')
+  .command('update <id>')
+  .description('Update a product')
   .requiredOption('--data <json>', 'Product data as JSON')
   .option('--json', 'Output as JSON')
-  .action(async (productId, options) => {
+  .action(async (id, options) => {
     requireAuth();
     let productData;
     try {
@@ -521,14 +552,16 @@ productsCmd
     }
 
     try {
-      const product = await withSpinner('Updating product...', () => updateProduct(productId, productData));
+      const product = await withSpinner('Updating product...', () =>
+        updateProduct(id, productData)
+      );
 
       if (options.json) {
         printJson(product);
         return;
       }
 
-      printSuccess('Product updated');
+      printSuccess(`Product updated: ${chalk.bold(product.name)}`);
     } catch (error) {
       printError(error.message);
       process.exit(1);
@@ -536,12 +569,12 @@ productsCmd
   });
 
 productsCmd
-  .command('delete <product-id>')
-  .description('Delete product')
-  .action(async (productId) => {
+  .command('delete <id>')
+  .description('Delete a product')
+  .action(async (id) => {
     requireAuth();
     try {
-      await withSpinner('Deleting product...', () => deleteProduct(productId));
+      await withSpinner('Deleting product...', () => deleteProduct(id));
       printSuccess('Product deleted');
     } catch (error) {
       printError(error.message);
@@ -553,16 +586,20 @@ productsCmd
 // BANK ACCOUNTS
 // ============================================================
 
-const bankCmd = program.command('bank-accounts').description('Manage bank accounts');
+const bankAccountsCmd = program.command('bank-accounts').description('Manage bank accounts');
 
-bankCmd
+bankAccountsCmd
   .command('list')
   .description('List bank accounts')
+  .option('--page <n>', 'Page number', '1')
+  .option('--per-page <n>', 'Results per page', '25')
   .option('--json', 'Output as JSON')
   .action(async (options) => {
     requireAuth();
     try {
-      const accounts = await withSpinner('Fetching bank accounts...', () => listBankAccounts());
+      const accounts = await withSpinner('Fetching bank accounts...', () =>
+        listBankAccounts({ page: parseInt(options.page), perPage: parseInt(options.perPage) })
+      );
 
       if (options.json) {
         printJson(accounts);
@@ -573,6 +610,8 @@ bankCmd
         { key: 'id', label: 'ID' },
         { key: 'name', label: 'Name' },
         { key: 'account_number', label: 'Account Number' },
+        { key: 'iban', label: 'IBAN' },
+        { key: 'swift', label: 'SWIFT' },
         { key: 'currency', label: 'Currency' }
       ]);
     } catch (error) {
@@ -581,14 +620,19 @@ bankCmd
     }
   });
 
-bankCmd
-  .command('get <account-id>')
-  .description('Get bank account details')
+bankAccountsCmd
+  .command('get <id>')
+  .description('Get a specific bank account')
   .option('--json', 'Output as JSON')
-  .action(async (accountId, options) => {
+  .action(async (id, options) => {
     requireAuth();
     try {
-      const account = await withSpinner('Fetching bank account...', () => getBankAccount(accountId));
+      const account = await withSpinner('Fetching bank account...', () => getBankAccount(id));
+
+      if (!account) {
+        printError('Bank account not found');
+        process.exit(1);
+      }
 
       if (options.json) {
         printJson(account);
@@ -596,19 +640,21 @@ bankCmd
       }
 
       console.log(chalk.bold('\nBank Account Details\n'));
-      console.log('ID:             ', chalk.cyan(account.id || accountId));
-      console.log('Name:           ', account.name || 'N/A');
-      console.log('Account Number: ', account.account_number || 'N/A');
-      console.log('Currency:       ', account.currency || 'N/A');
+      console.log('ID:             ', chalk.cyan(account.id));
+      console.log('Name:           ', chalk.bold(account.name));
+      console.log('Account Number: ', account.account_number);
+      console.log('IBAN:           ', account.iban);
+      console.log('SWIFT:          ', account.swift);
+      console.log('Currency:       ', account.currency);
     } catch (error) {
       printError(error.message);
       process.exit(1);
     }
   });
 
-bankCmd
+bankAccountsCmd
   .command('create')
-  .description('Create bank account')
+  .description('Create a new bank account')
   .requiredOption('--data <json>', 'Bank account data as JSON')
   .option('--json', 'Output as JSON')
   .action(async (options) => {
@@ -622,14 +668,63 @@ bankCmd
     }
 
     try {
-      const account = await withSpinner('Creating bank account...', () => createBankAccount(accountData));
+      const account = await withSpinner('Creating bank account...', () =>
+        createBankAccount(accountData)
+      );
 
       if (options.json) {
         printJson(account);
         return;
       }
 
-      printSuccess(`Bank account created: ${chalk.bold(account.name || account.id || 'N/A')}`);
+      printSuccess(`Bank account created: ${chalk.bold(account.name)}`);
+      console.log('ID: ', account.id);
+    } catch (error) {
+      printError(error.message);
+      process.exit(1);
+    }
+  });
+
+bankAccountsCmd
+  .command('update <id>')
+  .description('Update a bank account')
+  .requiredOption('--data <json>', 'Bank account data as JSON')
+  .option('--json', 'Output as JSON')
+  .action(async (id, options) => {
+    requireAuth();
+    let accountData;
+    try {
+      accountData = JSON.parse(options.data);
+    } catch {
+      printError('Invalid JSON for --data');
+      process.exit(1);
+    }
+
+    try {
+      const account = await withSpinner('Updating bank account...', () =>
+        updateBankAccount(id, accountData)
+      );
+
+      if (options.json) {
+        printJson(account);
+        return;
+      }
+
+      printSuccess(`Bank account updated: ${chalk.bold(account.name)}`);
+    } catch (error) {
+      printError(error.message);
+      process.exit(1);
+    }
+  });
+
+bankAccountsCmd
+  .command('delete <id>')
+  .description('Delete a bank account')
+  .action(async (id) => {
+    requireAuth();
+    try {
+      await withSpinner('Deleting bank account...', () => deleteBankAccount(id));
+      printSuccess('Bank account deleted');
     } catch (error) {
       printError(error.message);
       process.exit(1);
@@ -637,53 +732,65 @@ bankCmd
   });
 
 // ============================================================
-// ORGANIZATION
+// DOCUMENT BLOCKS (Invoice pads)
 // ============================================================
 
-const orgCmd = program.command('organization').description('Organization information');
+const blocksCmd = program.command('document-blocks').description('Manage document blocks (invoice pads)');
 
-orgCmd
-  .command('show')
-  .description('Show organization details')
+blocksCmd
+  .command('list')
+  .description('List document blocks')
+  .option('--page <n>', 'Page number', '1')
+  .option('--per-page <n>', 'Results per page', '25')
   .option('--json', 'Output as JSON')
   .action(async (options) => {
     requireAuth();
     try {
-      const org = await withSpinner('Fetching organization...', () => getOrganization());
+      const blocks = await withSpinner('Fetching document blocks...', () =>
+        listDocumentBlocks({ page: parseInt(options.page), perPage: parseInt(options.perPage) })
+      );
 
       if (options.json) {
-        printJson(org);
+        printJson(blocks);
         return;
       }
 
-      console.log(chalk.bold('\nOrganization Details\n'));
-      console.log('ID:   ', chalk.cyan(org.id || 'N/A'));
-      console.log('Name: ', chalk.bold(org.name || 'N/A'));
-      console.log('Tax:  ', org.tax_number || 'N/A');
+      printTable(blocks, [
+        { key: 'id', label: 'ID' },
+        { key: 'name', label: 'Name' },
+        { key: 'prefix', label: 'Prefix' },
+        { key: 'type', label: 'Type' }
+      ]);
     } catch (error) {
       printError(error.message);
       process.exit(1);
     }
   });
 
-orgCmd
-  .command('currencies')
-  .description('List supported currencies')
+blocksCmd
+  .command('get <id>')
+  .description('Get a specific document block')
   .option('--json', 'Output as JSON')
-  .action(async (options) => {
+  .action(async (id, options) => {
     requireAuth();
     try {
-      const currencies = await withSpinner('Fetching currencies...', () => listCurrencies());
+      const block = await withSpinner('Fetching document block...', () => getDocumentBlock(id));
+
+      if (!block) {
+        printError('Document block not found');
+        process.exit(1);
+      }
 
       if (options.json) {
-        printJson(currencies);
+        printJson(block);
         return;
       }
 
-      console.log(chalk.bold('\nSupported Currencies\n'));
-      currencies.forEach(curr => {
-        console.log(`• ${curr}`);
-      });
+      console.log(chalk.bold('\nDocument Block Details\n'));
+      console.log('ID:     ', chalk.cyan(block.id));
+      console.log('Name:   ', chalk.bold(block.name));
+      console.log('Prefix: ', block.prefix);
+      console.log('Type:   ', block.type);
     } catch (error) {
       printError(error.message);
       process.exit(1);

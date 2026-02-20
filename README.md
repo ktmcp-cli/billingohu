@@ -1,29 +1,31 @@
-# Billingo API CLI
-
 > "Six months ago, everyone was talking about MCPs. And I was like, screw MCPs. Every MCP would be better as a CLI."
 >
-> — [Peter Steinberger](https://twitter.com/steipete), Founder of OpenClaw
+> — [Peter Steinberger](https://twitter.com/steipete), Founder of OpenClaw  
 > [Watch on YouTube (~2:39:00)](https://www.youtube.com/@lexfridman) | [Lex Fridman Podcast #491](https://lexfridman.com/peter-steinberger/)
 
-A production-ready command-line interface for the Billingo API v3. Manage invoices, partners, products, and bank accounts for Hungarian businesses directly from your terminal.
+# Billingo CLI
+
+A production-ready command-line interface for the [Billingo](https://billingo.hu) API v3. Manage invoices, partners, products, bank accounts, and document blocks directly from your terminal.
 
 > **Disclaimer**: This is an unofficial CLI tool and is not affiliated with, endorsed by, or supported by Billingo.
 
 ## Features
 
-- **Invoices** — Create, list, send, and manage invoices
-- **Partners** — Manage customers and suppliers
-- **Products** — Maintain product catalog
-- **Bank Accounts** — Manage payment accounts
-- **Organization** — View organization details and supported currencies
-- **JSON output** — All commands support `--json` for scripting
+- **Documents** — Create, list, and manage invoices and other billing documents
+- **Partners** — Manage clients and suppliers
+- **Products** — Maintain your product catalog
+- **Bank Accounts** — Configure bank account information
+- **Document Blocks** — Manage invoice pads and numbering sequences
+- **API Key Auth** — Simple authentication with your Billingo API key
+- **JSON output** — All commands support `--json` for scripting and piping
+- **Colorized output** — Clean, readable terminal output with chalk
 
 ## Why CLI > MCP
 
 MCP servers are complex, stateful, and require a running server process. A CLI is:
 
 - **Simpler** — Just a binary you call directly
-- **Composable** — Pipe output to `jq`, `grep`, `awk`, and other tools
+- **Composable** — Pipe output to other tools
 - **Scriptable** — Use in shell scripts, CI/CD pipelines, cron jobs
 - **Debuggable** — See exactly what's happening with `--json` flag
 - **AI-friendly** — AI agents can call CLIs just as easily as MCPs, with less overhead
@@ -36,13 +38,23 @@ npm install -g @ktmcp-cli/billingohu
 
 ## Authentication Setup
 
-Configure your Billingo API key:
+### 1. Get your API key
+
+1. Go to [app.billingo.hu/api-key](https://app.billingo.hu/api-key)
+2. Generate a new API key
+3. Copy the key
+
+### 2. Configure the CLI
 
 ```bash
 billingohu config set --api-key YOUR_API_KEY
 ```
 
-Get your API key from [app.billingo.hu/api](https://app.billingo.hu/api)
+### 3. Verify
+
+```bash
+billingohu config show
+```
 
 ## Commands
 
@@ -56,85 +68,97 @@ billingohu config set --api-key <key>
 billingohu config show
 ```
 
-### Invoices
+### Documents (Invoices)
 
 ```bash
-# List invoices
-billingohu invoices list
-billingohu invoices list --type invoice --payment-method transfer
+# List all documents
+billingohu documents list
 
-# Get invoice details
-billingohu invoices get <invoice-id>
+# Filter by type
+billingohu documents list --type invoice
+billingohu documents list --type proforma
 
-# Create invoice
-billingohu invoices create --data '{...}'
+# Get a specific document
+billingohu documents get <id>
 
-# Send invoice via email
-billingohu invoices send <invoice-id> --emails "client@example.com"
+# Create a document
+billingohu documents create --data '{"partner_id":1,"items":[...]}'
 
-# Delete invoice
-billingohu invoices delete <invoice-id>
+# Download document PDF
+billingohu documents download <id>
+
+# Send document via email
+billingohu documents send <id> --emails "client@example.com,accounting@example.com"
 ```
 
-### Partners (Customers/Suppliers)
+### Partners (Clients)
 
 ```bash
-# List partners
+# List all partners
 billingohu partners list
 
-# Get partner details
-billingohu partners get <partner-id>
+# Search partners
+billingohu partners list --query "Acme Corp"
 
-# Create partner
-billingohu partners create --data '{"name":"Acme Corp","email":"contact@acme.com"}'
+# Get a specific partner
+billingohu partners get <id>
 
-# Update partner
-billingohu partners update <partner-id> --data '{...}'
+# Create a partner
+billingohu partners create --data '{"name":"Acme Corp","email":"billing@acme.com"}'
 
-# Delete partner
-billingohu partners delete <partner-id>
+# Update a partner
+billingohu partners update <id> --data '{"email":"newemail@acme.com"}'
+
+# Delete a partner
+billingohu partners delete <id>
 ```
 
 ### Products
 
 ```bash
-# List products
+# List all products
 billingohu products list
 
-# Get product details
-billingohu products get <product-id>
+# Get a specific product
+billingohu products get <id>
 
-# Create product
-billingohu products create --data '{"name":"Service","net_unit_price":10000,"currency":"HUF"}'
+# Create a product
+billingohu products create --data '{"name":"Consulting","net_unit_price":10000,"currency":"HUF","vat":"27%"}'
 
-# Update product
-billingohu products update <product-id> --data '{...}'
+# Update a product
+billingohu products update <id> --data '{"net_unit_price":12000}'
 
-# Delete product
-billingohu products delete <product-id>
+# Delete a product
+billingohu products delete <id>
 ```
 
 ### Bank Accounts
 
 ```bash
-# List bank accounts
+# List all bank accounts
 billingohu bank-accounts list
 
-# Get account details
-billingohu bank-accounts get <account-id>
+# Get a specific bank account
+billingohu bank-accounts get <id>
 
-# Create bank account
-billingohu bank-accounts create --data '{...}'
+# Create a bank account
+billingohu bank-accounts create --data '{"name":"Primary Account","iban":"HU..."}'
+
+# Update a bank account
+billingohu bank-accounts update <id> --data '{"name":"Updated Name"}'
+
+# Delete a bank account
+billingohu bank-accounts delete <id>
 ```
 
-### Organization
+### Document Blocks (Invoice Pads)
 
 ```bash
-# Show organization details
-billingohu organization show
+# List all document blocks
+billingohu document-blocks list
 
-# List supported currencies
-billingohu organization currencies
+# Get a specific document block
+billingohu document-blocks get <id>
 ```
 
 ## JSON Output
@@ -142,11 +166,8 @@ billingohu organization currencies
 All commands support `--json` for machine-readable output:
 
 ```bash
-# List invoices as JSON
-billingohu invoices list --json
-
-# Pipe to jq for filtering
-billingohu invoices list --json | jq '.[] | select(.payment_status == "paid")'
+# Get all documents as JSON
+billingohu documents list --json
 
 # Get partner details
 billingohu partners get <id> --json
@@ -154,36 +175,46 @@ billingohu partners get <id> --json
 
 ## Examples
 
-### Create invoice workflow
+### Create and send an invoice
 
 ```bash
-# First, create a partner
-PARTNER_ID=$(billingohu partners create \
-  --data '{"name":"Acme Corp","email":"billing@acme.com","city":"Budapest"}' \
-  --json | jq -r '.id')
+# First, find or create the partner
+billingohu partners list --query "Client Name"
 
-# Create invoice
-billingohu invoices create --data '{
-  "partner_id": '$PARTNER_ID',
+# Create a draft invoice
+billingohu documents create --data '{
+  "partner_id": 123,
   "type": "invoice",
+  "fulfillment_date": "2024-03-15",
+  "due_date": "2024-03-30",
   "currency": "HUF",
   "items": [
     {
       "name": "Consulting Services",
-      "net_unit_price": 100000,
-      "quantity": 1
+      "quantity": 10,
+      "unit_price": 15000,
+      "vat": "27%"
     }
   ]
 }'
 
-# Send invoice
-billingohu invoices send <invoice-id> --emails "billing@acme.com"
+# Send the invoice via email
+billingohu documents send <id> --emails "client@example.com"
 ```
 
-### List unpaid invoices
+### Manage your product catalog
 
 ```bash
-billingohu invoices list --json | jq '.[] | select(.payment_status != "paid") | {id, invoice_number, partner_name, total_gross}'
+# List all products
+billingohu products list --json
+
+# Create a new product
+billingohu products create --data '{
+  "name": "Monthly Subscription",
+  "net_unit_price": 9900,
+  "currency": "HUF",
+  "vat": "27%"
+}'
 ```
 
 ## Contributing

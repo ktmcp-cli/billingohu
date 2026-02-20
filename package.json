@@ -1,6 +1,6 @@
 {
   "name": "@ktmcp-cli/billingo",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Production-ready CLI for Billingo API v3 - invoicing, billing, partners",
   "type": "module",
   "main": "src/index.js",
