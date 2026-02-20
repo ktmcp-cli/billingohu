@@ -1,17 +1,16 @@
 {
-  "name": "@ktmcp-cli/billingohu",
+  "name": "@ktmcp-cli/billingo",
   "version": "1.0.0",
-  "description": "CLI for Billingo API v3 - Hungarian invoicing and accounting",
+  "description": "Production-ready CLI for Billingo API v3 - invoicing, billing, partners",
   "type": "module",
   "main": "src/index.js",
   "bin": {
-    "billingohu": "bin/billingohu.js"
+    "billingo": "bin/billingo.js"
   },
   "keywords": [
     "billingo",
     "invoicing",
-    "accounting",
-    "hungary",
+    "billing",
     "cli",
     "api",
     "ktmcp"
@@ -21,6 +20,7 @@
   "dependencies": {
     "commander": "^12.0.0",
     "axios": "^1.6.7",
+    "dotenv": "^16.4.1",
     "chalk": "^5.3.0",
     "ora": "^8.0.1",
     "conf": "^12.0.0"
@@ -30,10 +30,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ktmcp-cli/billingohu.git"
+    "url": "git+https://github.com/ktmcp-cli/billingo.git"
   },
-  "homepage": "https://killthemcp.com/billingohu-cli",
+  "homepage": "https://killthemcp.com/billingo-cli",
   "bugs": {
-    "url": "https://github.com/ktmcp-cli/billingohu/issues"
+    "url": "https://github.com/ktmcp-cli/billingo/issues"
   }
 }

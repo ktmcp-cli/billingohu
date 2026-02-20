@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getConfig } from './config.js';
 
-const BASE_URL = 'https://api.billingo.hu/v3';
+const BILLINGO_BASE_URL = 'https://api.billingo.hu/v3';
 
 /**
  * Make an authenticated API request
@@ -10,12 +10,12 @@ async function apiRequest(method, endpoint, data = null, params = null) {
   const apiKey = getConfig('apiKey');
 
   if (!apiKey) {
-    throw new Error('API key not configured. Run: billingohu config set --api-key <key>');
+    throw new Error('API key not configured. Please run: billingohu config set --api-key <key>');
   }
 
   const config = {
     method,
-    url: `${BASE_URL}${endpoint}`,
+    url: `${BILLINGO_BASE_URL}${endpoint}`,
     headers: {
       'X-API-KEY': apiKey,
       'Accept': 'application/json',
@@ -48,7 +48,7 @@ function handleApiError(error) {
     } else if (status === 429) {
       throw new Error('Rate limit exceeded. Please wait before retrying.');
     } else {
-      const message = data?.message || data?.error || JSON.stringify(data);
+      const message = data?.message || JSON.stringify(data);
       throw new Error(`API Error (${status}): ${message}`);
     }
   } else if (error.request) {
@@ -59,129 +59,141 @@ function handleApiError(error) {
 }
 
 // ============================================================
-// INVOICES
+// DOCUMENTS (Invoices)
 // ============================================================
 
-export async function listInvoices({ page = 1, per_page = 25, type, payment_method } = {}) {
-  const params = { page, per_page };
+export async function listDocuments({ page = 1, perPage = 25, type, status } = {}) {
+  const params = { page, per_page: perPage };
   if (type) params.type = type;
-  if (payment_method) params.payment_method = payment_method;
+  if (status) params.status = status;
 
   const data = await apiRequest('GET', '/documents', null, params);
   return data.data || [];
 }
 
-export async function getInvoice(invoiceId) {
-  const data = await apiRequest('GET', `/documents/${invoiceId}`);
+export async function getDocument(documentId) {
+  const data = await apiRequest('GET', `/documents/${documentId}`);
+  return data.data || null;
+}
+
+export async function createDocument(documentData) {
+  const data = await apiRequest('POST', '/documents', documentData);
+  return data.data || null;
+}
+
+export async function downloadDocument(documentId) {
+  const data = await apiRequest('GET', `/documents/${documentId}/download`);
   return data;
 }
 
-export async function createInvoice(invoiceData) {
-  const data = await apiRequest('POST', '/documents', invoiceData);
-  return data;
-}
-
-export async function deleteInvoice(invoiceId) {
-  const data = await apiRequest('DELETE', `/documents/${invoiceId}`);
-  return data;
-}
-
-export async function sendInvoice(invoiceId, { emails } = {}) {
-  const body = { emails };
-  const data = await apiRequest('POST', `/documents/${invoiceId}/send`, body);
+export async function sendDocument(documentId, emails) {
+  const data = await apiRequest('POST', `/documents/${documentId}/send`, { emails });
   return data;
 }
 
 // ============================================================
-// PARTNERS (CUSTOMERS)
+// PARTNERS (Clients)
 // ============================================================
 
-export async function listPartners({ page = 1, per_page = 25 } = {}) {
-  const params = { page, per_page };
+export async function listPartners({ page = 1, perPage = 25, query } = {}) {
+  const params = { page, per_page: perPage };
+  if (query) params.query = query;
+
   const data = await apiRequest('GET', '/partners', null, params);
   return data.data || [];
 }
 
 export async function getPartner(partnerId) {
   const data = await apiRequest('GET', `/partners/${partnerId}`);
-  return data;
+  return data.data || null;
 }
 
 export async function createPartner(partnerData) {
   const data = await apiRequest('POST', '/partners', partnerData);
-  return data;
+  return data.data || null;
 }
 
 export async function updatePartner(partnerId, partnerData) {
   const data = await apiRequest('PUT', `/partners/${partnerId}`, partnerData);
-  return data;
+  return data.data || null;
 }
 
 export async function deletePartner(partnerId) {
-  const data = await apiRequest('DELETE', `/partners/${partnerId}`);
-  return data;
+  await apiRequest('DELETE', `/partners/${partnerId}`);
+  return true;
 }
 
 // ============================================================
 // PRODUCTS
 // ============================================================
 
-export async function listProducts({ page = 1, per_page = 25 } = {}) {
-  const params = { page, per_page };
+export async function listProducts({ page = 1, perPage = 25 } = {}) {
+  const params = { page, per_page: perPage };
   const data = await apiRequest('GET', '/products', null, params);
   return data.data || [];
 }
 
 export async function getProduct(productId) {
   const data = await apiRequest('GET', `/products/${productId}`);
-  return data;
+  return data.data || null;
 }
 
 export async function createProduct(productData) {
   const data = await apiRequest('POST', '/products', productData);
-  return data;
+  return data.data || null;
 }
 
 export async function updateProduct(productId, productData) {
   const data = await apiRequest('PUT', `/products/${productId}`, productData);
-  return data;
+  return data.data || null;
 }
 
 export async function deleteProduct(productId) {
-  const data = await apiRequest('DELETE', `/products/${productId}`);
-  return data;
+  await apiRequest('DELETE', `/products/${productId}`);
+  return true;
 }
 
 // ============================================================
 // BANK ACCOUNTS
 // ============================================================
 
-export async function listBankAccounts({ page = 1, per_page = 25 } = {}) {
-  const params = { page, per_page };
+export async function listBankAccounts({ page = 1, perPage = 25 } = {}) {
+  const params = { page, per_page: perPage };
   const data = await apiRequest('GET', '/bank-accounts', null, params);
   return data.data || [];
 }
 
 export async function getBankAccount(accountId) {
   const data = await apiRequest('GET', `/bank-accounts/${accountId}`);
-  return data;
+  return data.data || null;
 }
 
 export async function createBankAccount(accountData) {
   const data = await apiRequest('POST', '/bank-accounts', accountData);
-  return data;
+  return data.data || null;
+}
+
+export async function updateBankAccount(accountId, accountData) {
+  const data = await apiRequest('PUT', `/bank-accounts/${accountId}`, accountData);
+  return data.data || null;
+}
+
+export async function deleteBankAccount(accountId) {
+  await apiRequest('DELETE', `/bank-accounts/${accountId}`);
+  return true;
 }
 
 // ============================================================
-// ORGANIZATIONS
+// DOCUMENT BLOCKS (Invoice pads)
 // ============================================================
 
-export async function getOrganization() {
-  const data = await apiRequest('GET', '/organization');
-  return data;
+export async function listDocumentBlocks({ page = 1, perPage = 25 } = {}) {
+  const params = { page, per_page: perPage };
+  const data = await apiRequest('GET', '/document-blocks', null, params);
+  return data.data || [];
 }
 
-export async function listCurrencies() {
-  const data = await apiRequest('GET', '/currencies');
-  return data || [];
+export async function getDocumentBlock(blockId) {
+  const data = await apiRequest('GET', `/document-blocks/${blockId}`);
+  return data.data || null;
 }
