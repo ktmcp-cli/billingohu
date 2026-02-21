@@ -1,199 +1,128 @@
 import axios from 'axios';
 import { getConfig } from './config.js';
 
-const BILLINGO_BASE_URL = 'https://api.billingo.hu/v3';
+function getBaseURL() {
+  const configuredUrl = getConfig('baseUrl');
+  return configuredUrl || 'https://api.billingo.hu/v3';
+}
 
-/**
- * Make an authenticated API request
- */
-async function apiRequest(method, endpoint, data = null, params = null) {
-  const apiKey = getConfig('apiKey');
-
-  if (!apiKey) {
-    throw new Error('API key not configured. Please run: billingohu config set --api-key <key>');
-  }
-
-  const config = {
-    method,
-    url: `${BILLINGO_BASE_URL}${endpoint}`,
-    headers: {
-      'X-API-KEY': apiKey,
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    }
+function getHeaders() {
+  const headers = {
+    'Content-Type': 'application/json'
   };
 
-  if (params) config.params = params;
-  if (data) config.data = data;
+  const apiKey = getConfig('apiKey');
+  if (apiKey) {
+    headers['Authorization'] = `Bearer ${apiKey}`;
+  }
 
+  return headers;
+}
+
+async function request(endpoint, method = 'GET', data = null) {
+  const baseURL = getBaseURL();
   try {
+    const config = {
+      method,
+      url: `${baseURL}${endpoint}`,
+      headers: getHeaders()
+    };
+
+    if (data) {
+      config.data = data;
+    }
+
     const response = await axios(config);
     return response.data;
   } catch (error) {
-    handleApiError(error);
-  }
-}
-
-function handleApiError(error) {
-  if (error.response) {
-    const status = error.response.status;
-    const data = error.response.data;
-
-    if (status === 401) {
-      throw new Error('Authentication failed. Check your API key.');
-    } else if (status === 403) {
-      throw new Error('Access forbidden. Check your API permissions.');
-    } else if (status === 404) {
-      throw new Error('Resource not found.');
-    } else if (status === 429) {
-      throw new Error('Rate limit exceeded. Please wait before retrying.');
-    } else {
-      const message = data?.message || JSON.stringify(data);
-      throw new Error(`API Error (${status}): ${message}`);
+    if (error.response?.data) {
+      throw new Error(`API Error: ${JSON.stringify(error.response.data)}`);
     }
-  } else if (error.request) {
-    throw new Error('No response from Billingo API. Check your internet connection.');
-  } else {
-    throw error;
+    throw new Error(`Request failed: ${error.message}`);
   }
 }
 
 // ============================================================
-// DOCUMENTS (Invoices)
+// API Methods
 // ============================================================
 
-export async function listDocuments({ page = 1, perPage = 25, type, status } = {}) {
-  const params = { page, per_page: perPage };
-  if (type) params.type = type;
-  if (status) params.status = status;
-
-  const data = await apiRequest('GET', '/documents', null, params);
-  return data.data || [];
+/**
+ * List all bank account
+ */
+export async function listBankAccount(params = {}) {
+  const endpoint = '/bank-accounts';
+  return await request(endpoint, 'GET', params);
 }
 
-export async function getDocument(documentId) {
-  const data = await apiRequest('GET', `/documents/${documentId}`);
-  return data.data || null;
+/**
+ * Create a bank account
+ */
+export async function createBankAccount(params = {}) {
+  const endpoint = '/bank-accounts';
+  return await request(endpoint, 'POST', params);
 }
 
-export async function createDocument(documentData) {
-  const data = await apiRequest('POST', '/documents', documentData);
-  return data.data || null;
+/**
+ * Delete a bank account
+ */
+export async function deleteBankAccount(params = {}) {
+  const endpoint = '/bank-accounts/{id}';
+  return await request(endpoint, 'DELETE', params);
 }
 
-export async function downloadDocument(documentId) {
-  const data = await apiRequest('GET', `/documents/${documentId}/download`);
-  return data;
+/**
+ * Retrieve a bank account
+ */
+export async function getBankAccount(params = {}) {
+  const endpoint = '/bank-accounts/{id}';
+  return await request(endpoint, 'GET', params);
 }
 
-export async function sendDocument(documentId, emails) {
-  const data = await apiRequest('POST', `/documents/${documentId}/send`, { emails });
-  return data;
+/**
+ * Update a bank account
+ */
+export async function updateBankAccount(params = {}) {
+  const endpoint = '/bank-accounts/{id}';
+  return await request(endpoint, 'PUT', params);
 }
 
-// ============================================================
-// PARTNERS (Clients)
-// ============================================================
-
-export async function listPartners({ page = 1, perPage = 25, query } = {}) {
-  const params = { page, per_page: perPage };
-  if (query) params.query = query;
-
-  const data = await apiRequest('GET', '/partners', null, params);
-  return data.data || [];
+/**
+ * Get currencies exchange rate.
+ */
+export async function getConversionRate(params = {}) {
+  const endpoint = '/currencies';
+  return await request(endpoint, 'GET', params);
 }
 
-export async function getPartner(partnerId) {
-  const data = await apiRequest('GET', `/partners/${partnerId}`);
-  return data.data || null;
+/**
+ * List all document blocks
+ */
+export async function listDocumentBlock(params = {}) {
+  const endpoint = '/document-blocks';
+  return await request(endpoint, 'GET', params);
 }
 
-export async function createPartner(partnerData) {
-  const data = await apiRequest('POST', '/partners', partnerData);
-  return data.data || null;
+/**
+ * List all documents
+ */
+export async function listDocument(params = {}) {
+  const endpoint = '/documents';
+  return await request(endpoint, 'GET', params);
 }
 
-export async function updatePartner(partnerId, partnerData) {
-  const data = await apiRequest('PUT', `/partners/${partnerId}`, partnerData);
-  return data.data || null;
+/**
+ * Create a document
+ */
+export async function createDocument(params = {}) {
+  const endpoint = '/documents';
+  return await request(endpoint, 'POST', params);
 }
 
-export async function deletePartner(partnerId) {
-  await apiRequest('DELETE', `/partners/${partnerId}`);
-  return true;
+/**
+ * Retrieve a document
+ */
+export async function getDocument(params = {}) {
+  const endpoint = '/documents/{id}';
+  return await request(endpoint, 'GET', params);
 }
 
-// ============================================================
-// PRODUCTS
-// ============================================================
-
-export async function listProducts({ page = 1, perPage = 25 } = {}) {
-  const params = { page, per_page: perPage };
-  const data = await apiRequest('GET', '/products', null, params);
-  return data.data || [];
-}
-
-export async function getProduct(productId) {
-  const data = await apiRequest('GET', `/products/${productId}`);
-  return data.data || null;
-}
-
-export async function createProduct(productData) {
-  const data = await apiRequest('POST', '/products', productData);
-  return data.data || null;
-}
-
-export async function updateProduct(productId, productData) {
-  const data = await apiRequest('PUT', `/products/${productId}`, productData);
-  return data.data || null;
-}
-
-export async function deleteProduct(productId) {
-  await apiRequest('DELETE', `/products/${productId}`);
-  return true;
-}
-
-// ============================================================
-// BANK ACCOUNTS
-// ============================================================
-
-export async function listBankAccounts({ page = 1, perPage = 25 } = {}) {
-  const params = { page, per_page: perPage };
-  const data = await apiRequest('GET', '/bank-accounts', null, params);
-  return data.data || [];
-}
-
-export async function getBankAccount(accountId) {
-  const data = await apiRequest('GET', `/bank-accounts/${accountId}`);
-  return data.data || null;
-}
-
-export async function createBankAccount(accountData) {
-  const data = await apiRequest('POST', '/bank-accounts', accountData);
-  return data.data || null;
-}
-
-export async function updateBankAccount(accountId, accountData) {
-  const data = await apiRequest('PUT', `/bank-accounts/${accountId}`, accountData);
-  return data.data || null;
-}
-
-export async function deleteBankAccount(accountId) {
-  await apiRequest('DELETE', `/bank-accounts/${accountId}`);
-  return true;
-}
-
-// ============================================================
-// DOCUMENT BLOCKS (Invoice pads)
-// ============================================================
-
-export async function listDocumentBlocks({ page = 1, perPage = 25 } = {}) {
-  const params = { page, per_page: perPage };
-  const data = await apiRequest('GET', '/document-blocks', null, params);
-  return data.data || [];
-}
-
-export async function getDocumentBlock(blockId) {
-  const data = await apiRequest('GET', `/document-blocks/${blockId}`);
-  return data.data || null;
-}

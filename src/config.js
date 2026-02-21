@@ -1,9 +1,13 @@
 import Conf from 'conf';
 
 const config = new Conf({
-  projectName: 'billingohu-cli',
+  projectName: 'ktmcp-billingohu',
   schema: {
     apiKey: {
+      type: 'string',
+      default: ''
+    },
+    baseUrl: {
       type: 'string',
       default: ''
     }
@@ -27,8 +31,7 @@ export function clearConfig() {
 }
 
 export function isConfigured() {
-  const apiKey = config.get('apiKey');
-  return !!apiKey;
+  return !!config.get('apiKey') || !!config.get('baseUrl');
 }
 
 export default config;

@@ -1,0 +1,129 @@
+{
+  "slug": "billingohu",
+  "title": "Billingo API v3",
+  "description": "This is a Billingo API v3 documentation. Our API based on REST software architectural style. API has resource-oriented URLs, accepts JSON-encoded request bodies and returns JSON-encoded responses. To use this API you have to generate a new API key on our [site](https://app.billingo.hu/api-key). Afte",
+  "base_url": "https://api.billingo.hu/v3",
+  "endpoints": [
+    {
+      "path": "/bank-accounts",
+      "method": "GET",
+      "operation_id": "ListBankAccount",
+      "summary": "List all bank account"
+    },
+    {
+      "path": "/bank-accounts",
+      "method": "POST",
+      "operation_id": "CreateBankAccount",
+      "summary": "Create a bank account"
+    },
+    {
+      "path": "/bank-accounts/{id}",
+      "method": "DELETE",
+      "operation_id": "DeleteBankAccount",
+      "summary": "Delete a bank account"
+    },
+    {
+      "path": "/bank-accounts/{id}",
+      "method": "GET",
+      "operation_id": "GetBankAccount",
+      "summary": "Retrieve a bank account"
+    },
+    {
+      "path": "/bank-accounts/{id}",
+      "method": "PUT",
+      "operation_id": "UpdateBankAccount",
+      "summary": "Update a bank account"
+    },
+    {
+      "path": "/currencies",
+      "method": "GET",
+      "operation_id": "GetConversionRate",
+      "summary": "Get currencies exchange rate."
+    },
+    {
+      "path": "/document-blocks",
+      "method": "GET",
+      "operation_id": "ListDocumentBlock",
+      "summary": "List all document blocks"
+    },
+    {
+      "path": "/documents",
+      "method": "GET",
+      "operation_id": "ListDocument",
+      "summary": "List all documents"
+    },
+    {
+      "path": "/documents",
+      "method": "POST",
+      "operation_id": "CreateDocument",
+      "summary": "Create a document"
+    },
+    {
+      "path": "/documents/{id}",
+      "method": "GET",
+      "operation_id": "GetDocument",
+      "summary": "Retrieve a document"
+    },
+    {
+      "path": "/documents/{id}/cancel",
+      "method": "POST",
+      "operation_id": "CancelDocument",
+      "summary": "Cancel a document"
+    },
+    {
+      "path": "/documents/{id}/create-from-proforma",
+      "method": "POST",
+      "operation_id": "CreateDocumentFromProforma",
+      "summary": "Create a document from proforma."
+    },
+    {
+      "path": "/documents/{id}/download",
+      "method": "GET",
+      "operation_id": "DownloadDocument",
+      "summary": "Download a document in PDF format."
+    },
+    {
+      "path": "/documents/{id}/online-szamla",
+      "method": "GET",
+      "operation_id": "GetOnlineSzamlaStatus",
+      "summary": "Retrieve a document Online Sz\u00e1mla status"
+    },
+    {
+      "path": "/documents/{id}/payments",
+      "method": "DELETE",
+      "operation_id": "DeletePayment",
+      "summary": "Delete all payment history on document"
+    },
+    {
+      "path": "/documents/{id}/payments",
+      "method": "GET",
+      "operation_id": "GetPayment",
+      "summary": "Retrieve a payment histroy"
+    },
+    {
+      "path": "/documents/{id}/payments",
+      "method": "PUT",
+      "operation_id": "UpdatePayment",
+      "summary": "Update payment history"
+    },
+    {
+      "path": "/documents/{id}/public-url",
+      "method": "GET",
+      "operation_id": "GetPublicUrl",
+      "summary": "Retrieve a document download public url."
+    },
+    {
+      "path": "/documents/{id}/send",
+      "method": "POST",
+      "operation_id": "SendDocument",
+      "summary": "Send invoice to given email adresses."
+    },
+    {
+      "path": "/organization",
+      "method": "GET",
+      "operation_id": "GetOrganizationData",
+      "summary": "Retrieve a organization data."
+    }
+  ],
+  "spec_url": "https://api.apis.guru/v2/specs/billingo.hu/3.0.7/openapi.json"
+}
