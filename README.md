@@ -9,7 +9,7 @@
 
 > **⚠️ Unofficial CLI** - Not officially sponsored or affiliated with Billingo API v3.
 
-A production-ready command-line interface for Billingo API v3 — This is a Billingo API v3 documentation. Our API based on REST software architectural style. API has resource-oriented URLs, accepts JSON-encoded request bodies and returns JSON-encoded responses. To use this API you have to generate a new API key on our [site](https://app.billingo.hu/api-key). Afte
+A production-ready command-line interface for Billingo API v3 — This is a Billingo API v3 documentation. Our API based on REST software architectural style. API has resource-oriented URLs, accepts JSON-encoded request bodies and returns JSON-encoded responses. To 
 
 ## Features
 
@@ -57,10 +57,6 @@ billingohu call --json     # JSON output
 ## JSON Output
 
 All commands support `--json` for structured output.
-
-## Support This Project
-
-If you find this CLI useful, we'd appreciate support across Reddit, Twitter, Hacker News, or Moltbook. Please be mindful - these are real community accounts. Contributors who can demonstrate their support helped advance KTMCP will have their PRs and feature requests prioritized.
 
 ## API Documentation
 

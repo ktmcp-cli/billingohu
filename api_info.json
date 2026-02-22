@@ -1,129 +1,128 @@
 {
   "slug": "billingohu",
   "title": "Billingo API v3",
-  "description": "This is a Billingo API v3 documentation. Our API based on REST software architectural style. API has resource-oriented URLs, accepts JSON-encoded request bodies and returns JSON-encoded responses. To use this API you have to generate a new API key on our [site](https://app.billingo.hu/api-key). Afte",
+  "description": "This is a Billingo API v3 documentation. Our API based on REST software architectural style. API has resource-oriented URLs, accepts JSON-encoded request bodies and returns JSON-encoded responses. To ",
   "base_url": "https://api.billingo.hu/v3",
   "endpoints": [
     {
       "path": "/bank-accounts",
-      "method": "GET",
-      "operation_id": "ListBankAccount",
-      "summary": "List all bank account"
+      "method": "get",
+      "summary": "List all bank account",
+      "operation_id": "ListBankAccount"
     },
     {
       "path": "/bank-accounts",
-      "method": "POST",
-      "operation_id": "CreateBankAccount",
-      "summary": "Create a bank account"
+      "method": "post",
+      "summary": "Create a bank account",
+      "operation_id": "CreateBankAccount"
     },
     {
       "path": "/bank-accounts/{id}",
-      "method": "DELETE",
-      "operation_id": "DeleteBankAccount",
-      "summary": "Delete a bank account"
+      "method": "delete",
+      "summary": "Delete a bank account",
+      "operation_id": "DeleteBankAccount"
     },
     {
       "path": "/bank-accounts/{id}",
-      "method": "GET",
-      "operation_id": "GetBankAccount",
-      "summary": "Retrieve a bank account"
+      "method": "get",
+      "summary": "Retrieve a bank account",
+      "operation_id": "GetBankAccount"
     },
     {
       "path": "/bank-accounts/{id}",
-      "method": "PUT",
-      "operation_id": "UpdateBankAccount",
-      "summary": "Update a bank account"
+      "method": "put",
+      "summary": "Update a bank account",
+      "operation_id": "UpdateBankAccount"
     },
     {
       "path": "/currencies",
-      "method": "GET",
-      "operation_id": "GetConversionRate",
-      "summary": "Get currencies exchange rate."
+      "method": "get",
+      "summary": "Get currencies exchange rate.",
+      "operation_id": "GetConversionRate"
     },
     {
       "path": "/document-blocks",
-      "method": "GET",
-      "operation_id": "ListDocumentBlock",
-      "summary": "List all document blocks"
+      "method": "get",
+      "summary": "List all document blocks",
+      "operation_id": "ListDocumentBlock"
     },
     {
       "path": "/documents",
-      "method": "GET",
-      "operation_id": "ListDocument",
-      "summary": "List all documents"
+      "method": "get",
+      "summary": "List all documents",
+      "operation_id": "ListDocument"
     },
     {
       "path": "/documents",
-      "method": "POST",
-      "operation_id": "CreateDocument",
-      "summary": "Create a document"
+      "method": "post",
+      "summary": "Create a document",
+      "operation_id": "CreateDocument"
     },
     {
       "path": "/documents/{id}",
-      "method": "GET",
-      "operation_id": "GetDocument",
-      "summary": "Retrieve a document"
+      "method": "get",
+      "summary": "Retrieve a document",
+      "operation_id": "GetDocument"
     },
     {
       "path": "/documents/{id}/cancel",
-      "method": "POST",
-      "operation_id": "CancelDocument",
-      "summary": "Cancel a document"
+      "method": "post",
+      "summary": "Cancel a document",
+      "operation_id": "CancelDocument"
     },
     {
       "path": "/documents/{id}/create-from-proforma",
-      "method": "POST",
-      "operation_id": "CreateDocumentFromProforma",
-      "summary": "Create a document from proforma."
+      "method": "post",
+      "summary": "Create a document from proforma.",
+      "operation_id": "CreateDocumentFromProforma"
     },
     {
       "path": "/documents/{id}/download",
-      "method": "GET",
-      "operation_id": "DownloadDocument",
-      "summary": "Download a document in PDF format."
+      "method": "get",
+      "summary": "Download a document in PDF format.",
+      "operation_id": "DownloadDocument"
     },
     {
       "path": "/documents/{id}/online-szamla",
-      "method": "GET",
-      "operation_id": "GetOnlineSzamlaStatus",
-      "summary": "Retrieve a document Online Sz\u00e1mla status"
+      "method": "get",
+      "summary": "Retrieve a document Online Számla status",
+      "operation_id": "GetOnlineSzamlaStatus"
     },
     {
       "path": "/documents/{id}/payments",
-      "method": "DELETE",
-      "operation_id": "DeletePayment",
-      "summary": "Delete all payment history on document"
+      "method": "delete",
+      "summary": "Delete all payment history on document",
+      "operation_id": "DeletePayment"
     },
     {
       "path": "/documents/{id}/payments",
-      "method": "GET",
-      "operation_id": "GetPayment",
-      "summary": "Retrieve a payment histroy"
+      "method": "get",
+      "summary": "Retrieve a payment histroy",
+      "operation_id": "GetPayment"
     },
     {
       "path": "/documents/{id}/payments",
-      "method": "PUT",
-      "operation_id": "UpdatePayment",
-      "summary": "Update payment history"
+      "method": "put",
+      "summary": "Update payment history",
+      "operation_id": "UpdatePayment"
     },
     {
       "path": "/documents/{id}/public-url",
-      "method": "GET",
-      "operation_id": "GetPublicUrl",
-      "summary": "Retrieve a document download public url."
+      "method": "get",
+      "summary": "Retrieve a document download public url.",
+      "operation_id": "GetPublicUrl"
     },
     {
       "path": "/documents/{id}/send",
-      "method": "POST",
-      "operation_id": "SendDocument",
-      "summary": "Send invoice to given email adresses."
+      "method": "post",
+      "summary": "Send invoice to given email adresses.",
+      "operation_id": "SendDocument"
     },
     {
       "path": "/organization",
-      "method": "GET",
-      "operation_id": "GetOrganizationData",
-      "summary": "Retrieve a organization data."
+      "method": "get",
+      "summary": "Retrieve a organization data.",
+      "operation_id": "GetOrganizationData"
     }
-  ],
-  "spec_url": "https://api.apis.guru/v2/specs/billingo.hu/3.0.7/openapi.json"
+  ]
 }
